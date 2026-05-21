@@ -33,17 +33,21 @@ type CaptionCue = {
   anchors: string[]
 }
 
-const STORAGE_KEY = 'narrated-design-walkthrough.voiceName'
+const VOICE_STORAGE_KEY = 'narrated-design-walkthrough.voiceName'
+const PLAYBACK_RATE_STORAGE_KEY = 'narrated-design-walkthrough.playbackRate'
+const CAPTION_FONT_SIZE_STORAGE_KEY = 'narrated-design-walkthrough.captionFontSize'
 const SPOTLIGHT_CLASS = 'walkthrough-spotlight'
 
 const isSupported = typeof window !== 'undefined' && 'speechSynthesis' in window
 
 const isSpeaking = ref(false)
 const isPaused = ref(false)
-const showCaptions = ref(false)
+const showCaptions = ref(true)
 const settingsOpen = ref(false)
 const voices = ref<SpeechSynthesisVoice[]>([])
 const selectedVoiceName = ref('')
+const playbackRate = ref(0.95)
+const captionFontSize = ref(1.35)
 const activeCharIndex = ref(0)
 const hasBoundaryEvent = ref(false)
 
@@ -80,7 +84,7 @@ const anchorRanges = computed(() => parsedSource.value.anchorRanges)
 
 const targetLang = ref('zh-TW')
 
-const captionVisible = computed(() => Boolean(cleanText.value) && (showCaptions.value || isSpeaking.value || isPaused.value))
+const captionVisible = computed(() => Boolean(cleanText.value) && showCaptions.value && (isSpeaking.value || isPaused.value))
 
 const isApplePlatform = computed(() => {
   if (typeof navigator === 'undefined') return false
@@ -241,16 +245,28 @@ function looksLikeAppleChineseVoice(v: SpeechSynthesisVoice) {
 let fallbackTimer: number | undefined
 let fallbackStart = 0
 
-function startFallback() {
+function completeNarration() {
+  isSpeaking.value = false
+  isPaused.value = false
+  activeCharIndex.value = 0
+  stopFallback()
+  clearAllSpotlights()
+  // Autoplay: notify subscriber (TTSNavButtons) so it can advance Slidev to the next slide.
+  // Fired ONLY on natural/timed end, not when stop()/cancel/error interrupts.
+  if (autoplay.value && onNarrationEndedHandler) onNarrationEndedHandler()
+}
+
+function startFallback(completeWhenDone = false) {
   if (fallbackTimer) window.clearInterval(fallbackTimer)
   fallbackStart = Date.now()
   const totalChars = cleanText.value.length
-  const msPerChar = 180
+  const msPerChar = 180 / playbackRate.value
   fallbackTimer = window.setInterval(() => {
     if (!isSpeaking.value) { stopFallback(); return }
     if (hasBoundaryEvent.value) { stopFallback(); return }
     const elapsed = Date.now() - fallbackStart
     activeCharIndex.value = Math.min(totalChars, Math.floor(elapsed / msPerChar))
+    if (completeWhenDone && activeCharIndex.value >= totalChars) completeNarration()
   }, 90)
 }
 
@@ -265,15 +281,35 @@ function loadVoices() {
   if (!isSupported) return
   voices.value = rankVoices(window.speechSynthesis.getVoices())
   if (!selectedVoiceName.value) {
-    const saved = window.localStorage.getItem(STORAGE_KEY)
+    const saved = window.localStorage.getItem(VOICE_STORAGE_KEY)
     if (saved && voices.value.some((v) => v.name === saved)) selectedVoiceName.value = saved
   }
 }
 
 function rememberVoice() {
   if (!isSupported) return
-  if (selectedVoiceName.value) window.localStorage.setItem(STORAGE_KEY, selectedVoiceName.value)
-  else window.localStorage.removeItem(STORAGE_KEY)
+  if (selectedVoiceName.value) window.localStorage.setItem(VOICE_STORAGE_KEY, selectedVoiceName.value)
+  else window.localStorage.removeItem(VOICE_STORAGE_KEY)
+}
+
+function loadPlaybackSettings() {
+  if (typeof window === 'undefined') return
+  const savedRate = Number(window.localStorage.getItem(PLAYBACK_RATE_STORAGE_KEY))
+  if (Number.isFinite(savedRate) && savedRate >= 0.6 && savedRate <= 1.6) playbackRate.value = savedRate
+  const savedCaptionFontSize = Number(window.localStorage.getItem(CAPTION_FONT_SIZE_STORAGE_KEY))
+  if (Number.isFinite(savedCaptionFontSize) && savedCaptionFontSize >= 0.8 && savedCaptionFontSize <= 1.5) {
+    captionFontSize.value = savedCaptionFontSize
+  }
+}
+
+function rememberPlaybackRate() {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(PLAYBACK_RATE_STORAGE_KEY, String(playbackRate.value))
+}
+
+function rememberCaptionFontSize() {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(CAPTION_FONT_SIZE_STORAGE_KEY, String(captionFontSize.value))
 }
 
 function speak() {
@@ -283,7 +319,7 @@ function speak() {
   u.lang = targetLang.value
   const voice = pickVoice()
   if (voice) u.voice = voice
-  u.rate = 0.95
+  u.rate = playbackRate.value
   u.pitch = 1
   u.onboundary = (event) => {
     if (typeof event.charIndex !== 'number') return
@@ -292,14 +328,7 @@ function speak() {
     stopFallback()
   }
   u.onend = () => {
-    isSpeaking.value = false
-    isPaused.value = false
-    activeCharIndex.value = 0
-    stopFallback()
-    clearAllSpotlights()
-    // Autoplay: notify subscriber (TTSNavButtons) so it can advance Slidev to the next slide.
-    // Fired ONLY on natural end (utterance.onend), not when stop()/cancel/error interrupts.
-    if (autoplay.value && onNarrationEndedHandler) onNarrationEndedHandler()
+    completeNarration()
   }
   u.onerror = () => {
     isSpeaking.value = false
@@ -334,9 +363,20 @@ function toggle() {
   speak()
 }
 
+function startSingle() {
+  autoplay.value = false
+  walkthroughComplete.value = false
+  speak()
+}
+
+function startAutoplay() {
+  autoplay.value = true
+  walkthroughComplete.value = false
+  speak()
+}
+
 function stop() {
-  if (!isSupported) return
-  window.speechSynthesis.cancel()
+  if (isSupported) window.speechSynthesis.cancel()
   isSpeaking.value = false
   isPaused.value = false
   activeCharIndex.value = 0
@@ -412,7 +452,8 @@ watch(currentNarration, async (next, prev) => {
     // Small extra delay because some browsers (esp. Chrome on Linux) drop the first
     // utterance if cancel() is still settling.
     window.setTimeout(() => {
-      if (autoplay.value && !walkthroughComplete.value && !isSpeaking.value) speak()
+      if (!autoplay.value || walkthroughComplete.value || isSpeaking.value) return
+      speak()
     }, 80)
   }
 })
@@ -436,6 +477,7 @@ let voicesInitialized = false
 
 function ensureInit() {
   if (voicesInitialized || !isSupported) return
+  loadPlaybackSettings()
   loadVoices()
   window.speechSynthesis.onvoiceschanged = loadVoices
   voicesInitialized = true
@@ -462,6 +504,8 @@ export function useTTSPlayback() {
     voices,
     voiceOptions,
     selectedVoiceName,
+    playbackRate,
+    captionFontSize,
     isApplePlatform,
     // autoplay / recording mode
     autoplay,
@@ -471,10 +515,14 @@ export function useTTSPlayback() {
     toggleAutoplay,
     // actions
     toggle,
+    startSingle,
+    startAutoplay,
     stop,
     speak,
     toggleCaptions,
     toggleSettings,
     rememberVoice,
+    rememberPlaybackRate,
+    rememberCaptionFontSize,
   }
 }
