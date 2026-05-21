@@ -1,0 +1,102 @@
+# narrated-design-walkthrough
+
+A skill that turns canonical engineering design docs (`docs/design/*.md`, `docs/plans/*.md`) into audio-first Slidev walkthroughs with per-slide TTS narration, spotlight anchors, and a built-in playback engine.
+
+## What it does
+
+- Reads your existing design/plan Markdown — never modifies the source docs.
+- Generates `docs/walkthroughs/<slug>/slides.md` with `<NarrationCue>` per slide, `data-walkthrough-anchor` spotlight wiring, and `_addon` playback controls.
+- Narration follows an engineer-to-architect briefing persona: decision first, risks owned, stage directions anchored to DOM elements.
+- Output language adapts to the user's request language (Traditional Chinese, English, etc.).
+
+## Install
+
+### Claude Code
+
+```bash
+claude plugins install guanmingliao/narrated-design-walkthrough
+```
+
+Then invoke in a session:
+
+```
+/narrated-design-walkthrough
+```
+
+### Codex
+
+```bash
+codex plugins install guanmingliao/narrated-design-walkthrough
+```
+
+Then invoke:
+
+```
+/narrated-design-walkthrough
+```
+
+### Manual (copy into project)
+
+Copy `skills/narrated-design-walkthrough/` into your project's `.codex/skills/` (for Codex) or Claude Code skills directory, then use `/narrated-design-walkthrough` in a session.
+
+## Update
+
+```bash
+# Claude Code
+claude plugins update narrated-design-walkthrough
+
+# Codex
+codex plugins update narrated-design-walkthrough
+```
+
+## Usage
+
+Point the skill at a design doc:
+
+> "Generate a narrated walkthrough from docs/design/2026-05-20-ai-quiz-curriculum-guided-design.md"
+
+The skill will:
+
+1. Read the design (and matching plan if it exists).
+2. Classify the design as `schema-heavy`, `process-heavy`, or `hybrid`.
+3. Draft slides with narration in your language.
+4. Write `docs/walkthroughs/<slug>/slides.md` and `README.md`.
+5. Scaffold `docs/walkthroughs/` with the `_addon` playback engine if not already present.
+
+Preview:
+
+```bash
+cd docs/walkthroughs
+npm install          # once
+npm run dev <slug>   # opens at http://localhost:3030
+```
+
+## Skill structure
+
+```
+skills/
+└── narrated-design-walkthrough/
+    ├── SKILL.md                      ← skill instructions (loaded by Claude / Codex)
+    ├── agents/openai.yaml            ← OpenAI agent config
+    ├── references/
+    │   ├── narration-style.md        ← engineer-to-architect narration rules
+    │   └── slidev-layout.md          ← slide layout, diagram, and spotlight rules
+    └── assets/templates/
+        ├── _addon/                   ← Slidev addon: TTS engine, captions, spotlight
+        │   ├── components/           ← GlobalCaptions, NarrationCue, TTSNavButtons
+        │   ├── composables/          ← useNarration, useTTSPlayback
+        │   ├── global-bottom.vue
+        │   ├── package.json
+        │   └── style.css
+        ├── root/
+        │   ├── bin/walkthrough.mjs   ← dev/build/list/validate dispatcher
+        │   ├── gitignore.template
+        │   └── package.json.template
+        └── walkthrough/
+            ├── slides.md.template
+            └── README.md.template
+```
+
+## License
+
+MIT

@@ -1,0 +1,42 @@
+# {{title}}
+
+- `status`: generated-derivative
+- `sourceDesign`: {{sourceDesign}}
+- `sourcePlan`: {{sourcePlan}}
+- `lastRegenerated`: {{lastRegenerated}}
+
+這份 walkthrough 是 canonical design / plan 的消費端 derivative, 用於 async review, onboarding, 或 stakeholder explanation。請不要把它當成規格真相來源。
+
+## Preview
+
+播放引擎與控件不放在本目錄, 共用自 [`docs/walkthroughs/_addon/`](../_addon/)（NarrationCue / GlobalCaptions / TTSNavButtons / spotlight engine 等）。本目錄只保留 `slides.md` 跟 `README.md`。
+
+由 `docs/walkthroughs/` 統一管 Slidev 依賴 + generic dev/build script（吃 slug 參數）：
+
+```bash
+cd docs/walkthroughs
+npm install                       # 一次性，全部 walkthrough 共用 node_modules
+npm run dev {{slug}}              # 啟動本 walkthrough preview
+npm run build {{slug}}            # 產出 static SPA 到本目錄的 dist/
+npm run list                      # 列出所有可用 slug
+```
+
+預設 port `3030`，網址 `http://127.0.0.1:3030`。
+
+## Recording / Autoplay
+
+要錄成 MP4 demo：
+
+1. `http://localhost:3030/1?play=1` 開頁面，點一次 **Listen**（瀏覽器 autoplay 規則要 user gesture）。
+2. narration 念完 → Slidev 自動切下一張 → 新 slide narration 接著播 → 一路到最後。
+3. 最後一張結束時畫面會跑「End of walkthrough」banner，這時可以停止錄影。
+4. 中途要取消：點 nav bar 上的 **AUTO** 按鈕取消 autoplay，或關掉分頁。
+
+Mac 錄影流程（BlackHole + QuickTime / OBS）詳見 skill 文件的 Recording Mode 章節。
+
+## Edit
+
+- 改設計內容時, 優先更新 source design / plan, 再重產本 walkthrough。
+- 只修消費體驗時, 可以直接改 `slides.md` 與 speaker notes。
+- 每張 slide 的 `<NarrationCue :text>` 內容應與 speaker notes 保持一致。
+- 播放控件、字幕、spotlight 引擎共用自 `../_addon/`；要改播放邏輯改那邊（全部 walkthrough 自動套用），不要在這裡複製一份。

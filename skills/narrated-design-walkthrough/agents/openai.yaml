@@ -1,0 +1,4 @@
+interface:
+  display_name: "Narrated Design Walkthrough"
+  short_description: "Audio-first design walkthroughs"
+  default_prompt: "Use $narrated-design-walkthrough to turn this canonical design doc and its matching plan into a derivative narrated Slidev walkthrough."
