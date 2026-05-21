@@ -14,7 +14,8 @@ A skill that turns canonical engineering design docs (`docs/design/*.md`, `docs/
 ### Claude Code
 
 ```bash
-claude plugins install guanmingliao/narrated-design-walkthrough
+claude plugin marketplace add gmliao/narrated-design-walkthrough
+claude plugin install narrated-design-walkthrough
 ```
 
 Then invoke in a session:
@@ -26,7 +27,7 @@ Then invoke in a session:
 ### Codex
 
 ```bash
-codex plugins install guanmingliao/narrated-design-walkthrough
+codex plugins install gmliao/narrated-design-walkthrough
 ```
 
 Then invoke:
