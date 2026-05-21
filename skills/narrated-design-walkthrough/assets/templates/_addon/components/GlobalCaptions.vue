@@ -1,5 +1,5 @@
 <!--
-  GlobalCaptions — bottom-center 3-line lyrics caption window.
+  GlobalCaptions — compact bottom-center caption window.
 
   Driven entirely by useTTSPlayback (no own state). Mounted from global-bottom.vue
   so it renders once across the whole deck, and visually persists across slide
@@ -7,40 +7,36 @@
   composable).
 -->
 <template>
-  <div v-if="captionVisible" class="gc-caption" aria-live="polite">
-    <div class="gc-caption-window">
-      <div class="gc-caption-stack" :style="{ transform: `translateY(calc(${-currentCueIdx} * var(--gc-line-height)))` }">
-        <div class="gc-caption-line gc-caption-spacer" aria-hidden="true">&nbsp;</div>
-        <div
-          v-for="(cue, index) in captionCues"
-          :key="`cue-${index}`"
-          class="gc-caption-line"
-          :class="lineClass(index)"
-        >
-          <template v-for="token in cue.tokens" :key="`${index}-${token.start}-${token.end}`">
+  <Teleport to="body">
+    <div v-if="captionVisible" class="gc-caption" aria-live="polite">
+      <div class="gc-caption-window" :style="{ '--gc-caption-font-size': `${tts.captionFontSize.value}rem` }">
+        <div class="gc-caption-line">
+          <template v-for="token in currentCue?.tokens ?? []" :key="`${currentCueIdx}-${token.start}-${token.end}`">
             <span
               v-if="token.text.trim()"
               class="gc-caption-token"
-              :class="{ 'gc-caption-token--active': index === currentCueIdx && hasBoundaryEvent && activeCharIndex >= token.start && activeCharIndex < token.end }"
+              :class="{ 'gc-caption-token--active': hasBoundaryEvent && activeCharIndex >= token.start && activeCharIndex < token.end }"
             >{{ token.text }}</span>
             <span v-else>{{ token.text }}</span>
           </template>
         </div>
-        <div class="gc-caption-line gc-caption-spacer" aria-hidden="true">&nbsp;</div>
       </div>
     </div>
-  </div>
+  </Teleport>
 
   <!-- End-of-walkthrough banner (autoplay finished on last slide). -->
-  <div v-if="walkthroughComplete" class="gc-end-banner" aria-live="polite">
-    End of walkthrough
-  </div>
+  <Teleport to="body">
+    <div v-if="walkthroughComplete" class="gc-end-banner" aria-live="polite">
+      End of walkthrough
+    </div>
+  </Teleport>
 
   <!-- Hidden marker for headless recording tools (e.g. Playwright) to detect completion. -->
   <div v-if="walkthroughComplete" class="walkthrough-complete" aria-hidden="true" />
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useTTSPlayback } from '../composables/useTTSPlayback'
 
 const tts = useTTSPlayback()
@@ -53,19 +49,12 @@ const activeCharIndex = tts.activeCharIndex
 const hasBoundaryEvent = tts.hasBoundaryEvent
 const walkthroughComplete = tts.walkthroughComplete
 
-function lineClass(index: number) {
-  const diff = index - currentCueIdx.value
-  if (diff === 0) return 'gc-caption-line--current'
-  if (diff === -1) return 'gc-caption-line--prev'
-  if (diff === 1) return 'gc-caption-line--next'
-  return 'gc-caption-line--far'
-}
+const currentCue = computed(() => captionCues.value[currentCueIdx.value])
 </script>
 
 <style scoped>
 .gc-caption {
-  --gc-line-height: 1.85em;
-  bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  bottom: calc(4.85rem + env(safe-area-inset-bottom));
   display: flex;
   justify-content: center;
   left: 0;
@@ -76,7 +65,7 @@ function lineClass(index: number) {
 }
 
 .gc-caption-window {
-  background: rgba(15, 23, 42, 0.55);
+  background: rgba(15, 23, 42, 0.78);
   -webkit-backdrop-filter: blur(14px) saturate(150%);
   backdrop-filter: blur(14px) saturate(150%);
   border: 1px solid rgba(148, 163, 184, 0.18);
@@ -84,51 +73,23 @@ function lineClass(index: number) {
   box-shadow: 0 10px 32px rgba(2, 6, 23, 0.45);
   box-sizing: content-box;
   color: #f8fafc;
-  font-size: clamp(0.92rem, 1.4vw, 1.18rem);
+  font-size: var(--gc-caption-font-size, 1rem);
   font-weight: 600;
   line-height: 1.45;
-  max-width: min(64vw, 52rem);
+  max-width: min(52vw, 25em);
   overflow: hidden;
-  padding: 0.85rem 1.6rem 0.9rem;
-  height: calc(var(--gc-line-height) * 3);
-}
-
-.gc-caption-stack {
-  display: flex;
-  flex-direction: column;
-  transition: transform 360ms cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
+  padding: 0.25em 0.6em 0.3em;
 }
 
 .gc-caption-line {
-  height: var(--gc-line-height);
-  line-height: var(--gc-line-height);
-  opacity: 0;
+  display: -webkit-box;
+  line-height: 1.45;
+  max-height: 1.45em;
   overflow: hidden;
   text-align: center;
-  text-overflow: ellipsis;
-  transition: opacity 280ms ease, color 280ms ease;
-  white-space: nowrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
 }
-
-.gc-caption-spacer { opacity: 0; }
-
-.gc-caption-line--prev {
-  color: rgba(226, 232, 240, 0.55);
-  opacity: 0.55;
-}
-
-.gc-caption-line--current {
-  color: #f8fafc;
-  opacity: 1;
-}
-
-.gc-caption-line--next {
-  color: rgba(226, 232, 240, 0.7);
-  opacity: 0.6;
-}
-
-.gc-caption-line--far { opacity: 0; }
 
 .gc-caption-token {
   transition: color 140ms ease, text-shadow 140ms ease;
