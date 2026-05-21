@@ -1,5 +1,7 @@
 # narrated-design-walkthrough
 
+[繁體中文](README.zh-TW.md)
+
 A skill that turns canonical engineering design docs (`docs/design/*.md`, `docs/plans/*.md`) into audio-first Slidev walkthroughs with per-slide TTS narration, spotlight anchors, and a built-in playback engine.
 
 ## See it in action
