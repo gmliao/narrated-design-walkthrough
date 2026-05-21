@@ -67,7 +67,7 @@ function resolveSlug(slug) {
 function runSlidev(action, slug, extraArgs) {
   const slidesPath = `${slug}/slides.md`
   const args = action === 'build'
-    ? ['slidev', 'build', slidesPath, '--out', `${slug}/dist`, ...extraArgs]
+    ? ['slidev', 'build', slidesPath, '--out', 'dist', ...extraArgs]
     : ['slidev', slidesPath, ...extraArgs]
 
   // Default port for dev only if user didn't pass one
