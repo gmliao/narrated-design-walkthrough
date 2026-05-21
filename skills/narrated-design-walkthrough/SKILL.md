@@ -113,7 +113,16 @@ Create a consumable derivative artifact from canonical Markdown design and plan 
 
 ## Templates
 
-Two layers of templates:
+Two layers of templates.
+
+**Resolve the skill directory first** — all `assets/templates/` paths below are relative to the skill's own directory, not the project working directory. Run this once before any copy step:
+
+```bash
+SKILL_DIR=$(find "$HOME/.claude/plugins/cache" -name "SKILL.md" -path "*/narrated-design-walkthrough/SKILL.md" 2>/dev/null | head -1 | xargs dirname)
+echo "Skill dir: $SKILL_DIR"
+```
+
+If the output is empty, the plugin is not installed — tell the user to run `claude plugin install narrated-design-walkthrough` in a new session. Every template path below (e.g. `assets/templates/_addon/...`) means `$SKILL_DIR/assets/templates/_addon/...`.
 
 ### Per-walkthrough scaffolding (every new walkthrough)
 

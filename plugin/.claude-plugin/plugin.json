@@ -14,5 +14,7 @@
     "tts",
     "design-docs"
   ],
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "releaseNotes": "1.0.0: initial release.",
+  "versionPolicy": "patch (1.0.x) = SKILL.md improvements only, no project changes needed; minor (1.x.0) = _addon/ files updated, users must copy new templates to docs/walkthroughs/_addon/; major (x.0.0) = breaking _addon/ API change, users must re-bootstrap from scratch."
 }
