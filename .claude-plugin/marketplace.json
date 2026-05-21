@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "narrated-design-walkthrough",
+  "description": "Narrated Design Walkthrough — generate TTS-narrated Slidev walkthroughs from engineering design docs",
+  "owner": {
+    "name": "Guanming Liao",
+    "email": "guanming.liao@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "narrated-design-walkthrough",
+      "description": "Generate derivative Slidev walkthroughs with curated TTS narration from canonical engineering design docs. Turns docs/design or docs/plans Markdown into an audio-first, phase-aware narrated walkthrough.",
+      "author": {
+        "name": "Guanming Liao"
+      },
+      "source": "."
+    }
+  ]
+}
