@@ -7,57 +7,56 @@
   styling via the slidev-icon-btn class and Slidev's controls-foreground colors.
 -->
 <template>
+  <!-- Teleport into Slidev's nav when found; overlay fallback otherwise -->
   <Teleport :to="targetEl" :disabled="!targetEl">
-    <button
-      v-if="!hidden"
-      class="slidev-icon-btn slidev-tts-btn"
-      :class="{ 'slidev-tts-btn--primary': true, 'slidev-tts-btn--auto': tts.autoplay.value }"
-      :disabled="!tts.isSupported || !tts.cleanText.value"
-      :title="primaryButtonTitle"
-      @click="tts.toggle"
-    >
-      <span v-if="tts.isSpeaking.value">⏸</span>
-      <span v-else-if="tts.autoplay.value">⏵⏵</span>
-      <span v-else>▶</span>
-    </button>
-    <button
-      v-if="!hidden && (tts.isSpeaking.value || tts.isPaused.value)"
-      class="slidev-icon-btn slidev-tts-btn"
-      title="Stop narration"
-      @click="tts.stop"
-    >
-      <span>■</span>
-    </button>
-    <button
-      v-if="!hidden"
-      class="slidev-icon-btn slidev-tts-btn"
-      :class="{ 'slidev-tts-btn--active': tts.autoplay.value }"
-      :disabled="!tts.isSupported"
-      :title="tts.autoplay.value ? 'Autoplay on — click to cancel' : 'Toggle autoplay (auto-advance slides when narration ends)'"
-      @click="tts.toggleAutoplay"
-    >
-      <span class="slidev-tts-text-icon">AUTO</span>
-    </button>
-    <button
-      v-if="!hidden"
-      class="slidev-icon-btn slidev-tts-btn"
-      :class="{ 'slidev-tts-btn--active': tts.showCaptions.value }"
-      :disabled="!tts.cleanText.value"
-      title="Toggle captions"
-      @click="tts.toggleCaptions"
-    >
-      <span class="slidev-tts-text-icon">CC</span>
-    </button>
-    <button
-      v-if="!hidden"
-      class="slidev-icon-btn slidev-tts-btn"
-      :class="{ 'slidev-tts-btn--active': tts.settingsOpen.value }"
-      :disabled="!tts.isSupported"
-      title="Voice settings"
-      @click="tts.toggleSettings"
-    >
-      <span class="slidev-tts-text-icon">V</span>
-    </button>
+    <div :class="useOverlay ? 'tts-overlay' : 'tts-inline-btns'">
+      <button
+        class="slidev-icon-btn slidev-tts-btn"
+        :class="{ 'slidev-tts-btn--primary': true, 'slidev-tts-btn--auto': tts.autoplay.value }"
+        :disabled="!tts.isSupported || !tts.cleanText.value"
+        :title="primaryButtonTitle"
+        @click="tts.toggle"
+      >
+        <span v-if="tts.isSpeaking.value">⏸</span>
+        <span v-else-if="tts.autoplay.value">⏵⏵</span>
+        <span v-else>▶</span>
+      </button>
+      <button
+        v-if="tts.isSpeaking.value || tts.isPaused.value"
+        class="slidev-icon-btn slidev-tts-btn"
+        title="Stop narration"
+        @click="tts.stop"
+      >
+        <span>■</span>
+      </button>
+      <button
+        class="slidev-icon-btn slidev-tts-btn"
+        :class="{ 'slidev-tts-btn--active': tts.autoplay.value }"
+        :disabled="!tts.isSupported"
+        :title="tts.autoplay.value ? 'Autoplay on — click to cancel' : 'Toggle autoplay'"
+        @click="tts.toggleAutoplay"
+      >
+        <span class="slidev-tts-text-icon">AUTO</span>
+      </button>
+      <button
+        class="slidev-icon-btn slidev-tts-btn"
+        :class="{ 'slidev-tts-btn--active': tts.showCaptions.value }"
+        :disabled="!tts.cleanText.value"
+        title="Toggle captions"
+        @click="tts.toggleCaptions"
+      >
+        <span class="slidev-tts-text-icon">CC</span>
+      </button>
+      <button
+        class="slidev-icon-btn slidev-tts-btn"
+        :class="{ 'slidev-tts-btn--active': tts.settingsOpen.value }"
+        :disabled="!tts.isSupported"
+        title="Voice settings"
+        @click="tts.toggleSettings"
+      >
+        <span class="slidev-tts-text-icon">V</span>
+      </button>
+    </div>
   </Teleport>
 
   <Teleport to="body">
@@ -89,7 +88,7 @@ const tts = useTTSPlayback()
 const nav = useNav()
 
 const targetEl = ref<HTMLElement | null>(null)
-const hidden = ref(false)
+const useOverlay = ref(false)
 let attempts = 0
 let timer: number | undefined
 
@@ -130,18 +129,26 @@ function handleNarrationEnded() {
 }
 
 function findSlidevNavContainer(): HTMLElement | null {
-  // Slidev's bottom nav lives inside <nav class="flex flex-col"> within
-  // .slidev-slide-container > div.absolute.bottom-0. The actual button row is
-  // a <div> inside that <nav>. We avoid matching slide-content icon buttons
-  // (code-block copy, Mermaid zoom, etc.) which share the .slidev-icon-btn
-  // class but live elsewhere in the DOM.
+  // Strategy 1: Slidev v52 nav element with flex flex-col classes
   const navEl = document.querySelector('nav.flex.flex-col') as HTMLElement | null
-  if (!navEl) return null
-  // Find the inner row that holds the .slidev-icon-btn siblings.
-  const row = navEl.querySelector(':scope > div, :scope > div > div')
-  if (row && row.querySelector('.slidev-icon-btn')) return row as HTMLElement
-  // Fallback: use the nav itself.
-  return navEl
+  if (navEl) {
+    const row = navEl.querySelector(':scope > div, :scope > div > div')
+    if (row && row.querySelector('.slidev-icon-btn')) return row as HTMLElement
+    return navEl
+  }
+  // Strategy 2: any element that already contains slidev-icon-btn buttons
+  // but is NOT inside a slide (avoids code-block copy / Mermaid zoom buttons)
+  const btns = Array.from(document.querySelectorAll('.slidev-icon-btn'))
+  for (const btn of btns) {
+    const parent = btn.parentElement
+    if (parent && !parent.closest('.slidev-slide') && !parent.closest('[data-slidev-slide]')) {
+      return parent
+    }
+  }
+  // Strategy 3: the bottom-fixed controls bar (Slidev v52 alternate class)
+  const controls = document.querySelector('.slidev-nav, [class*="slidev-controls"], .controls') as HTMLElement | null
+  if (controls) return controls
+  return null
 }
 
 function tryAttach() {
@@ -154,9 +161,9 @@ function tryAttach() {
   if (attempts < 60) {
     timer = window.setTimeout(tryAttach, 200)
   } else {
-    // Give up — render inline (Teleport disabled). The buttons still work,
-    // they just won't be inside Slidev's nav.
-    hidden.value = false
+    // Nav not found after 12s — fall back to fixed overlay so buttons are
+    // always reachable regardless of Slidev's internal DOM structure.
+    useOverlay.value = true
   }
 }
 
@@ -247,5 +254,26 @@ onBeforeUnmount(() => {
   min-height: 2rem;
   padding: 0.35rem 0.5rem;
   width: 100%;
+}
+
+/* Fallback overlay — used when Slidev's nav container can't be found */
+.tts-overlay {
+  align-items: center;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 10px;
+  bottom: 1.2rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  display: flex;
+  gap: 0.25rem;
+  left: 50%;
+  padding: 0.35rem 0.6rem;
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: 100;
+}
+
+.tts-inline-btns {
+  display: contents;
 }
 </style>
