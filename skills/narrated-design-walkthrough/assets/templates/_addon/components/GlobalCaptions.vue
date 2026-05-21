@@ -15,7 +15,7 @@
             <span
               v-if="token.text.trim()"
               class="gc-caption-token"
-              :class="{ 'gc-caption-token--active': hasBoundaryEvent && activeCharIndex >= token.start && activeCharIndex < token.end }"
+              :class="{ 'gc-caption-token--active': activeCharIndex >= token.start && activeCharIndex < token.end }"
             >{{ token.text }}</span>
             <span v-else>{{ token.text }}</span>
           </template>
@@ -46,7 +46,6 @@ const captionVisible = tts.captionVisible
 const captionCues = tts.captionCues
 const currentCueIdx = tts.currentCueIdx
 const activeCharIndex = tts.activeCharIndex
-const hasBoundaryEvent = tts.hasBoundaryEvent
 const walkthroughComplete = tts.walkthroughComplete
 
 const currentCue = computed(() => captionCues.value[currentCueIdx.value])

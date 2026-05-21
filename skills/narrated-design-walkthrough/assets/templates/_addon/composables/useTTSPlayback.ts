@@ -134,7 +134,7 @@ const captionCues = computed<CaptionCue[]>(() => {
     const span = token.end - startChar
     const isHardBreak = /[。！？!?；;]/.test(token.text)
     const isSoftBreak = /[，、,]/.test(token.text) || token.text.trim() === ''
-    const shouldBreak = isHardBreak || (span > 26 && isSoftBreak) || span > 36
+    const shouldBreak = isHardBreak || (span > 12 && isSoftBreak) || span > 20
     if (!shouldBreak) return
     pushCue(index)
     startToken = index + 1
@@ -244,6 +244,7 @@ function looksLikeAppleChineseVoice(v: SpeechSynthesisVoice) {
 
 let fallbackTimer: number | undefined
 let fallbackStart = 0
+let currentMsPerChar = 180
 
 function completeNarration() {
   isSpeaking.value = false
@@ -256,17 +257,17 @@ function completeNarration() {
   if (autoplay.value && onNarrationEndedHandler) onNarrationEndedHandler()
 }
 
-function startFallback(completeWhenDone = false) {
+function startFallback() {
   if (fallbackTimer) window.clearInterval(fallbackTimer)
-  fallbackStart = Date.now()
+  // Start from current position so resume and post-boundary advances are smooth
+  fallbackStart = Date.now() - Math.round(activeCharIndex.value * currentMsPerChar)
   const totalChars = cleanText.value.length
-  const msPerChar = 180 / playbackRate.value
   fallbackTimer = window.setInterval(() => {
     if (!isSpeaking.value) { stopFallback(); return }
-    if (hasBoundaryEvent.value) { stopFallback(); return }
     const elapsed = Date.now() - fallbackStart
-    activeCharIndex.value = Math.min(totalChars, Math.floor(elapsed / msPerChar))
-    if (completeWhenDone && activeCharIndex.value >= totalChars) completeNarration()
+    const estimated = Math.min(totalChars, Math.floor(elapsed / currentMsPerChar))
+    // Only advance forward — boundary events may correct backwards
+    if (estimated > activeCharIndex.value) activeCharIndex.value = estimated
   }, 90)
 }
 
@@ -315,6 +316,7 @@ function rememberCaptionFontSize() {
 function speak() {
   if (!isSupported || !cleanText.value) return
   window.speechSynthesis.cancel()
+  currentMsPerChar = 180 / playbackRate.value
   const u = new SpeechSynthesisUtterance(cleanText.value)
   u.lang = targetLang.value
   const voice = pickVoice()
@@ -325,7 +327,8 @@ function speak() {
     if (typeof event.charIndex !== 'number') return
     hasBoundaryEvent.value = true
     activeCharIndex.value = event.charIndex
-    stopFallback()
+    // Resync fallback baseline so it continues smoothly from this exact position
+    fallbackStart = Date.now() - Math.round(event.charIndex * currentMsPerChar)
   }
   u.onend = () => {
     completeNarration()
@@ -341,9 +344,7 @@ function speak() {
   window.speechSynthesis.speak(u)
   isSpeaking.value = true
   isPaused.value = false
-  window.setTimeout(() => {
-    if (isSpeaking.value && !hasBoundaryEvent.value) startFallback()
-  }, 1200)
+  startFallback()
 }
 
 function toggle() {
@@ -358,6 +359,7 @@ function toggle() {
     window.speechSynthesis.resume()
     isSpeaking.value = true
     isPaused.value = false
+    startFallback()
     return
   }
   speak()
