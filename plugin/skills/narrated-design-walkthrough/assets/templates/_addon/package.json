@@ -1,0 +1,8 @@
+{
+  "name": "slidev-addon-narrated-walkthrough",
+  "private": true,
+  "description": "Shared Slidev addon for narrated design walkthroughs: NarrationCue + GlobalCaptions + TTSNavButtons + spotlight engine.",
+  "engines": {
+    "slidev": ">=52.0.0"
+  }
+}

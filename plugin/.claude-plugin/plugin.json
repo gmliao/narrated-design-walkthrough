@@ -1,0 +1,18 @@
+{
+  "name": "narrated-design-walkthrough",
+  "description": "Generate derivative Slidev walkthroughs with curated TTS narration from canonical engineering design docs. Turns docs/design or docs/plans Markdown into an audio-first, phase-aware narrated walkthrough.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Guanming Liao"
+  },
+  "repository": "https://github.com/gmliao/narrated-design-walkthrough",
+  "license": "MIT",
+  "keywords": [
+    "slidev",
+    "walkthrough",
+    "narration",
+    "tts",
+    "design-docs"
+  ],
+  "skills": "./skills/"
+}

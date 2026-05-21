@@ -1,0 +1,53 @@
+---
+theme: seriph
+colorSchema: dark
+title: {{title}}
+layout: cover
+addons:
+  - ./_addon
+drawings:
+  persist: false
+transition: slide-left
+mdc: true
+fonts:
+  sans: 'Inter, "Noto Sans TC", sans-serif'
+  serif: '"Source Serif 4", "Noto Serif TC", serif'
+  mono: '"JetBrains Mono", ui-monospace, monospace'
+---
+
+# {{title}}
+
+<div class="text-base opacity-70 mt-3">{{subtitle}}</div>
+
+<div class="source-note">
+sourceDesign: {{sourceDesign}}<br>
+sourcePlan: {{sourcePlan}}<br>
+status: generated-derivative<br>
+lastRegenerated: {{lastRegenerated}}
+</div>
+
+<NarrationCue :text="`{{cover-narration}}`" />
+
+<!--
+{{cover-narration}}
+-->
+
+---
+
+# 第一張內容投影片
+
+放投影片可見內容（卡片 / 表格 / Mermaid 等）。
+凡是要被 narration 指向的元素，加 `data-walkthrough-anchor="anchor-id"`。
+
+<NarrationCue :text="`narration 第一段, 用 [h:anchor-id]...[/h] markup 把要指向的話術跟 anchor 綁起來.`" />
+
+<!--
+narration 第一段, 用 [h:anchor-id]...[/h] markup 把要指向的話術跟 anchor 綁起來.
+-->
+
+<!--
+依 narration-style.md 規範持續加 slide。每張記得：
+  1. <NarrationCue :text="`...`" /> 與 speaker notes (<!-- ... -->) 內容一致
+  2. 指向元素加 data-walkthrough-anchor
+  3. narration 中對應指向句用 [h:anchor-id]...[/h] 包起來
+-->
