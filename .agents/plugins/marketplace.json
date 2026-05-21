@@ -1,0 +1,20 @@
+{
+  "name": "narrated-design-walkthrough",
+  "interface": {
+    "displayName": "Narrated Design Walkthrough"
+  },
+  "plugins": [
+    {
+      "name": "narrated-design-walkthrough",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

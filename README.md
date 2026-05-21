@@ -17,6 +17,58 @@ A skill that turns canonical engineering design docs (`docs/design/*.md`, `docs/
 
 ## Install
 
+### Codex
+
+Requires a Codex CLI build that supports plugin marketplaces. Check with:
+
+```bash
+codex plugin marketplace add --help
+```
+
+Add this GitHub repo as a Codex plugin marketplace:
+
+```bash
+codex plugin marketplace add gmliao/narrated-design-walkthrough
+```
+
+Then install it from Codex:
+
+1. Start Codex with `codex`.
+2. Open the plugin browser with `/plugins`.
+3. Switch to the **Narrated Design Walkthrough** marketplace.
+4. Open **Narrated Design Walkthrough** and choose **Install plugin**.
+5. Start a new Codex thread.
+
+Then invoke the installed skill by asking for it directly:
+
+> Use `narrated-design-walkthrough` to generate a narrated walkthrough from `docs/design/my-feature-design.md`.
+
+You can also type `@` in Codex and choose the plugin or bundled skill when you want to force this workflow.
+
+If `codex plugins install ...` appears in an older guide, ignore it — Codex installs plugins from the in-app `/plugins` browser after the marketplace is added.
+
+For teammates who already added this marketplace before an update, refresh it first:
+
+```bash
+codex plugin marketplace upgrade narrated-design-walkthrough
+```
+
+If the `/plugins` browser is unavailable in the current Codex build, the manual equivalent is to add this block to `~/.codex/config.toml` after adding the marketplace:
+
+```toml
+[plugins."narrated-design-walkthrough@narrated-design-walkthrough"]
+enabled = true
+```
+
+If macOS blocks `codex` as malicious software, check for an old global binary shadowing your current install:
+
+```bash
+which -a codex
+codex --version
+```
+
+Remove or reorder the stale entry, then reinstall/update Codex through your normal channel (`npm install -g @openai/codex@latest`, Homebrew, or the Codex app).
+
 ### Claude Code
 
 ```bash
@@ -25,18 +77,6 @@ claude plugin install narrated-design-walkthrough
 ```
 
 Then invoke in a session:
-
-```
-/narrated-design-walkthrough
-```
-
-### Codex
-
-```bash
-codex plugins install gmliao/narrated-design-walkthrough
-```
-
-Then invoke:
 
 ```
 /narrated-design-walkthrough
@@ -53,8 +93,10 @@ Copy `skills/narrated-design-walkthrough/` into your project's `.codex/skills/` 
 claude plugins update narrated-design-walkthrough
 
 # Codex
-codex plugins update narrated-design-walkthrough
+codex plugin marketplace upgrade narrated-design-walkthrough
 ```
+
+After upgrading the marketplace, restart Codex and reinstall or re-enable the plugin from `/plugins` if needed.
 
 ## Usage
 
@@ -81,6 +123,8 @@ npm run dev <slug>   # opens at http://localhost:3030
 ## Skill structure
 
 ```
+.agents/plugins/marketplace.json       ← Codex marketplace entry for GitHub installs
+.codex-plugin/plugin.json              ← Codex plugin manifest
 skills/
 └── narrated-design-walkthrough/
     ├── SKILL.md                      ← skill instructions (loaded by Claude / Codex)
