@@ -22,9 +22,7 @@ Create a consumable derivative artifact from canonical Markdown design and plan 
    - `hybrid`: both are important.
    - Use this classification to choose which diagrams and slides matter.
 
-3. Read the required references before drafting:
-   - `references/narration-style.md` for speaker notes.
-   - `references/slidev-layout.md` for visual fit, diagram sizing, and preview expectations.
+3. Apply the rules in the **Narration Reference** and **Layout Reference** sections at the end of this skill before drafting slides.
 
 4. Create output under `docs/walkthroughs/<date-or-source-slug>/`. A new walkthrough is **just two files**:
    - `slides.md` — content + per-slide `<NarrationCue :text>` + `data-walkthrough-anchor` elements; frontmatter must include `addons: [./_addon]` (note: `./_addon`, NOT `../_addon` — Slidev resolves addon paths relative to the npm script's cwd, which is `docs/walkthroughs/`, not relative to `slides.md`. The wrong path is a common AI agent failure mode — verify by running `npm run dev <slug>` and confirming Slidev doesn't ENOENT-fail on addon resolution.)
@@ -228,3 +226,185 @@ when someone wants to build that pipeline.
 ---
 
 This skill is experimental. Prefer improving the produced walkthrough and this skill from real use over adding generic options.
+
+---
+
+## Narration Reference
+
+### Persona (non-negotiable)
+
+Narration is not slide commentary, nor a voice-over for a written explanation. Every narration segment must be written from this persona:
+
+> **You are a senior engineer on this project, briefing the architect on a technical decision.**
+> The listener is experienced, patient, and will challenge you. Your goal: they walk away understanding why the decision was made, where it could fail, and where you've already handled the risk.
+
+Specific requirements:
+
+- **First person, singular and plural**: use "we" for team/design decisions, "I" for your own position or recommendation. Avoid the observer voice ("this design will…", "for the reviewer…").
+- **Decision first**: lead with "We decided X" / "We are not doing Y", then give the background and reasoning. Don't describe the current state first and build up to the decision.
+- **Anticipate challenges**: proactively answer the question the architect will ask. "Someone will ask why we didn't use an enum — because…" "This choice looks conservative, but our judgment is…"
+- **Own the risks**: name the risks you see, and say how you plan to contain them. Don't hand risks to the listener to figure out.
+- **Familiarity**: you've lived with this design. The narration should carry the confidence of "I've already thought about this", not reading from a script.
+
+### Language Adaptation
+
+Write narration in the same language the user used in their request. If the request is in Traditional Chinese, use Traditional Chinese throughout; if in English, use English. The persona, structure, and style rules apply regardless of language.
+
+**CSS utility color tokens** (e.g. Tailwind's `amber`, `sky`, `slate`, `rose`) are code identifiers, not speech words. Translate them into the narration language:
+
+| Tailwind token | Traditional Chinese | English |
+|---|---|---|
+| `amber` | 琥珀色 | amber |
+| `sky` | 天藍色 | sky blue |
+| `slate` | 灰藍色 | slate |
+| `rose` | 玫瑰色 | rose |
+
+Technical identifiers that have no natural-language equivalent (`guidedInput`, `QuizGuideSource`, `border-amber-400`) stay in their original form in all languages.
+
+Stage direction examples in Traditional Chinese: "左邊那欄" / "中間這個 box" / "我用琥珀色標的是因為…"
+Stage direction examples in English: "the left column" / "this middle box" / "I marked this amber because…"
+
+### What To Say
+
+- Lead with the decision or conclusion for this slide, then expand on the reasoning.
+- Explain why this boundary was chosen, not another, and acknowledge the appeal of alternatives.
+- Translate schema, tables, and fields into "who owns the data, what breaks, who needs to re-run if it changes."
+- At non-goals, explain *why this is not done now*, not just "this is out of scope."
+- At verification/testing slides, say "this means if something goes wrong, we'll catch it at this stage," not just "we'll have tests."
+
+### What Not To Say
+
+- Don't read the slide text aloud. The slide is visible; narration adds the judgment that can't be seen.
+- Don't use "as shown on the slide" / "as mentioned above" — pure caption recap, no new information added.
+- Don't use "for the reviewer…" / "this walkthrough is…" — that's meta commentary; it belongs in the README, not the narration.
+- Don't enumerate all bullets. Collect them into a trade-off, a claim, or a conclusion.
+- Don't oversell. If the source design is still a draft, the narration should carry "we're leaning toward… but this part is still converging."
+
+### Stage Direction + Spotlight Markup
+
+Walkthrough narration **lights up**: every sentence that points at a real element on the slide must be wrapped in `[h:anchor-id]…[/h]` markup. The useTTSPlayback engine applies a ring + scale spotlight to matching `[data-walkthrough-anchor="anchor-id"]` DOM elements while that cue is active.
+
+Syntax:
+
+```
+[h:card-llm]the amber LLM pipeline on the right[/h] — I marked it amber specifically to signal…
+[h:card-teacher,card-api,card-llm]three boxes, left to right[/h], starting with…
+```
+
+- `[h:id]…[/h]`: single target
+- `[h:id-a,id-b,id-c]…[/h]`: light up multiple targets simultaneously (comma-separated, no spaces)
+- The matching element must carry `data-walkthrough-anchor="id"` (multiple ids space-separated per HTML convention)
+- Text inside the markup is read aloud by TTS; the brackets and `h:` prefix are stripped before speech
+
+**Stage direction without markup doesn't count**: if narration says "that column on the right" but the element has no anchor and the sentence has no markup, there is no spotlight effect — it's a spec violation, not a style choice.
+
+### Sentence Shape
+
+- Leave breathing room between sentences; TTS needs it. Target 30–45 characters per sentence in Chinese; in English, one clear clause per sentence.
+- One idea per sentence. Connect complex reasoning with "but", "in other words", "which means" — don't pack sub-clauses.
+- Keep each slide's narration to 90–150 Chinese characters (or ~80–120 English words); if you're over, the slide should probably be split.
+
+### Good Patterns (engineer-to-architect)
+
+- "Our decision this version is X, primarily because Y — which also means we're not doing Z yet."
+- "You'll ask why we didn't use an enum. Our reasoning: sourceKey is…, so we chose…"
+- "The risk we're carrying is… and the way we're containing it is…"
+- "The alternative was… We know its upside, but the cost is…, so we're holding off."
+- **"This middle box is the only thing moving in this version — the two blocks above and below, I haven't touched — that's the zero-regression guarantee."** (stage direction + decision)
+- **"You see that amber column on the right — I left it there deliberately because…"** (color decode + trade-off)
+
+### Self-Check (run through after writing narration)
+
+1. If I were saying this face-to-face to the architect, would this sound too formal or too passive? If yes, switch to active assertion.
+2. If the listener only heard this, without seeing the slide, would they know what decision I made? If not, move the decision sentence first.
+3. Did I own a risk and say how I'm containing it in this segment? If completely absent, add one sentence.
+4. Is there at least one stage direction (pointing at a column / box / color / row)? If none, add one — but every direction must be followed by why it's worth pointing at, not just a label.
+5. Does every stage direction sentence have `[h:anchor]…[/h]` markup, and does the matching element have `data-walkthrough-anchor`? If the text points without the spotlight wiring, that's a spec gap.
+
+---
+
+## Layout Reference
+
+### Addon Repo Structure
+
+```
+docs/walkthroughs/
+├── package.json              ← Slidev runtime + dev/build scripts, shared by all walkthroughs
+├── node_modules/             ← shared, one install
+├── _addon/                   ← Slidev local addon — playback engine, controls, captions, spotlight
+├── <slug>/
+│   ├── README.md
+│   └── slides.md             ← frontmatter must include addons: [./_addon]
+```
+
+Every walkthrough's `slides.md` frontmatter must include:
+
+```yaml
+addons:
+  - ./_addon
+```
+
+**Note the path**: `./_addon`, NOT `../_addon`. Slidev resolves addon paths relative to the npm script's cwd (`docs/walkthroughs/`). Writing `../_addon` causes ENOENT.
+
+### Theme
+
+Default theme is `@slidev/theme-seriph`. Frontmatter must include `theme: seriph` plus `colorSchema: dark` or `light`.
+
+### Diagram Rules
+
+- Wrap Mermaid diagrams in `<div class="diagram-box">`.
+- Use left-to-right (`LR`) by default; `TD` only for ≤4 rows.
+- **Mermaid label escaping**: if a label contains `[]` / `{}` / `()`, wrap in double quotes: `load["Load QuizGuideTopic[]"]`. Wrap all labels in double quotes by default to be safe.
+- Avoid long railroad diagrams (>4 nodes). Convert to stage cards instead.
+- `npm run validate <slug>` catches Mermaid escape errors (rule M1). Run before `npm run dev`.
+
+### Spotlight Anchors
+
+Elements targeted by `[h:id]` narration markup must have `data-walkthrough-anchor="id"`.
+
+| Element type | Naming | Example |
+|---|---|---|
+| Card | `card-<role>` | `card-llm` |
+| Table row | `row-<key>` | `row-step2` |
+| Step card | `step-<phaseKey>` | `step-phase3b` |
+| Bullet | `bullet-<key>` | `bullet-payload-removed` |
+| Inline phrase | `span-<key>` | `span-xor` |
+
+Multiple anchors are space-separated: `data-walkthrough-anchor="card-llm card-pipeline"`.
+
+### Required CSS in `style.css`
+
+```css
+.slidev-layout { overflow: hidden; }
+
+.diagram-box {
+  align-items: center; display: flex; justify-content: center;
+  margin: 0.75rem auto; max-height: 330px; max-width: 100%; overflow: hidden;
+}
+.diagram-box .mermaid, .diagram-box .mermaid svg {
+  height: auto !important; max-height: 330px !important;
+  max-width: 100% !important; width: 100% !important;
+}
+.phase-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.phase-card { border: 1px solid #334155; border-radius: 8px; min-height: 132px; padding: 0.85rem; }
+.data-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 1rem; }
+.data-card { border: 1px solid #334155; border-radius: 8px; min-height: 118px; padding: 0.85rem; }
+.data-card strong { color: #38bdf8; display: block; margin-bottom: 0.45rem; }
+.data-card p { font-size: 0.82rem; line-height: 1.35; margin: 0; }
+.takeaway { color: #94a3b8; font-size: 1.05rem; line-height: 1.45; margin-bottom: 1rem; }
+.compact-table { border-collapse: collapse; font-size: 0.82rem; line-height: 1.28; margin-top: 1rem; width: 100%; }
+.compact-table th, .compact-table td { border-bottom: 1px solid #334155; padding: 0.55rem 0.65rem; text-align: left; vertical-align: top; }
+.compact-table th { color: #38bdf8; font-weight: 700; }
+```
+
+### Safe Slide Structure
+
+- One primary idea per slide; split dense diagrams across two slides.
+- Keep bottom 5rem safe for captions; keep top-right 12rem×4rem safe for TTS controls.
+- Global shared CSS (`.phase-grid`, `.phase-card`, etc.) **must** go in `style.css`, not in `<style>` blocks inside `slides.md` — Slidev scopes per-slide `<style>` blocks to that slide only.
+
+### Preview Checks
+
+- Title slide, one Mermaid slide, one phase slide.
+- TTS controls (Listen / Pause / Stop / CC / Voice) appear inside Slidev's bottom-left nav.
+- Captions appear bottom-center and don't cover primary content.
