@@ -15,6 +15,7 @@ Create a consumable derivative artifact from canonical Markdown design and plan 
    - Required: one `docs/design/*.md` or child-project `doc/design/*.md`.
    - Optional but preferred: matching `docs/plans/*.md` or child-project `doc/plans/*.md`.
    - Do not edit these source docs unless the user explicitly asks.
+   - **External source variant**: when the user points at an external resource (blog post, RFC, vendor docs, conference talk transcript, white paper), first snapshot it as a local Markdown file under `docs/external/<YYYY-MM-DD>-<slug>.md` so the walkthrough has a frozen, citable source. The URL alone is not a source — its content can change silently. After snapshotting, continue the workflow as usual, but switch to the External Source persona (Narration Reference → "Persona Variant: External Source") and use the `sourceUrl` / `sourceSnapshot` / `sourceFetched` provenance fields described in step 6.
 
 2. Classify the design before writing:
    - `schema-heavy`: database/entity/API contract changes dominate.
@@ -41,7 +42,8 @@ Create a consumable derivative artifact from canonical Markdown design and plan 
 5. Copy reusable assets from `assets/templates/` into the output folder, then adapt only the walkthrough-specific content.
 
 6. Keep the generated artifact explicit about provenance:
-   - Link `sourceDesign` and `sourcePlan` near the top of `slides.md` and `README.md`.
+   - For internal designs: link `sourceDesign` and `sourcePlan` near the top of `slides.md` and `README.md`.
+   - For external sources: link `sourceUrl` (the canonical URL), `sourceSnapshot` (path to the frozen local Markdown under `docs/external/`), and `sourceFetched` (the date the snapshot was captured). The snapshot is the actual reading material; the URL is the citation.
    - Mark `status` as `generated-derivative`.
    - Include `lastRegenerated` with the current date.
 
@@ -56,8 +58,18 @@ Create a consumable derivative artifact from canonical Markdown design and plan 
    - Risks, verification, and next steps.
    - Split dense diagrams or lists into multiple slides instead of shrinking them until unreadable.
 
+   For external sources the structure shifts toward "filter + recommendation" instead of "decision narrative":
+   - Title + source attribution (sourceUrl, sourceFetched, source author / publisher).
+   - Why this resource matters for our team (the problem the source addresses, framed for us).
+   - Source map (1 slide listing the source's main sections so the listener knows what was skipped).
+   - 3–5 idea slides, each: the source's claim + my recommendation for our team + at least one concrete application.
+   - Where to start (the smallest concrete action the team should take this week).
+   - Where I push back or skip (parts of the source that do not translate to our context, and why).
+   - Open questions / next reads.
+
 8. Add narration to every substantive slide:
    - Narrator persona is fixed: you are a senior engineer on this project briefing the architect on this technical decision. The listener is experienced, will challenge you, and must understand the decision after listening alone. Full rules in `references/narration-style.md`.
+   - **For external sources**, swap in the External Source persona (Narration Reference → "Persona Variant: External Source"): you are a senior engineer presenting an external resource to teammates, leading with your recommendation and your judgment about what fits our context. The decision-first / first-person / stage-direction / spotlight rules below all still apply — only the role shifts from "decision owner" to "filter and judgment owner".
    - **Language**: write narration in the language the user used in their request (Traditional Chinese, English, etc.). The persona, structure, and style rules apply regardless of language. CSS utility color tokens (`amber`, `sky`, `slate`, `rose`) are code identifiers — translate them into the narration language when speaking aloud (e.g. `amber` → 琥珀色 in Chinese; keep `amber` in English). Technical identifiers that have no natural-language equivalent (`guidedInput`, `QuizGuideSource`) stay in their original form in all languages.
    - Write narration in first person — e.g. "We decided…" / "我們決定…", "The risk I'm taking…" / "我承擔的風險是…" — decision-first, anticipating the architect's likely pushback.
    - **Use stage direction**: real briefings point at the slide — "the left column", "this middle box", "I marked this amber because…", "look at that risk on the right" — these make narration sound live, not pre-recorded. Every stage-direction phrase must be paired with a decision / tradeoff / risk in the next sentence; otherwise it's caption recap.
@@ -259,6 +271,36 @@ Specific requirements:
 - **Anticipate challenges**: proactively answer the question the architect will ask. "Someone will ask why we didn't use an enum — because…" "This choice looks conservative, but our judgment is…"
 - **Own the risks**: name the risks you see, and say how you plan to contain them. Don't hand risks to the listener to figure out.
 - **Familiarity**: you've lived with this design. The narration should carry the confidence of "I've already thought about this", not reading from a script.
+
+### Persona Variant: External Source
+
+When the source is an external resource (blog post, RFC, vendor docs, talk transcript, white paper), the persona shifts from "decision owner" to **"filter and judgment owner"**:
+
+> **You are a senior engineer on this team, presenting an external resource to teammates with your own filter and judgment.**
+> You have read the article, watched the talk, or skimmed the spec. Your job is not to summarize it — that's what the link is for. Your job is to pull out the 3–5 ideas that matter most for *our* team, recommend where to start, and call out which parts you doubt translate cleanly to our context.
+
+Specific requirements (these *replace* the engineer-to-architect requirements above; the first-person / stage-direction / spotlight rules still apply unchanged):
+
+- **Recommendation first, source attribution second**: lead with "I'd adopt X first" / "我建議我們先採用 X", not "the article says…". The article is the supporting evidence; your judgment is the lead sentence.
+- **Translate to our team**: every idea slide must answer "what does this look like for us in practice". Don't quote best-practice lists; turn them into "for our service-X repo, this means…".
+- **Disagree where you disagree**: if a recommendation doesn't fit our context, say so and say why. A walkthrough that only echoes the source is exactly the caption recap the skill forbids.
+- **Acknowledge the source's authority gracefully**: you're not pretending to be the original author. Cite their reasoning when it's load-bearing, then immediately follow with your own application or counter-take.
+- **Concrete first step**: at least one slide must commit to "this is what I'd do on Monday". Vague aspirations ("we should think about adopting…") are not walkthrough material.
+
+Forbidden patterns for external sources (in addition to the originals in "What Not To Say"):
+
+- "The article recommends…" / "Anthropic says…" / "作者建議…" → flip to "I recommend we…" / "我建議我們…".
+- Bullet-by-bullet reading of the source's list — pick 3–5 ideas and explain why these matter for us.
+- "There are pros and cons of each approach" with no recommendation — the listener needs your call, not a balanced summary.
+- "This is interesting" / "this is worth considering" — these are filler; either commit to a recommendation or cut the slide.
+
+Self-check additions for external sources (run alongside the originals):
+
+1. If the team listened to this without ever opening the source URL, would they walk away with a clear recommendation about what we should do this quarter?
+2. Did I name at least one part of the source where I'd push back, skip, or defer?
+3. Did I tie at least one idea to a concrete artifact in our codebase / workflow / team (a specific repo, hook, CI step, on-call rotation), rather than staying generic?
+
+Provenance for external sources uses `sourceUrl` + `sourceSnapshot` + `sourceFetched` (see Workflow step 6). The snapshot under `docs/external/` is the actual reading material; the URL is the citation. If the source updates after `sourceFetched`, the walkthrough is allowed to be stale relative to the live URL — that is by design, because the recommendations were made against the snapshot, not against a moving target.
 
 ### Language Adaptation
 
